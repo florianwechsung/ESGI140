@@ -1,19 +1,24 @@
 close all
 clear all
 tic
-num_runners = 200;
-x = unifrnd(-1, 0, num_runners, 1);
+num_runners = 200; % people
+width_0 = 7.5; % meter
+start_box_density = 4; % (people/square_meter)
+start_box_length = num_runners/(width_0 * start_box_density);
+x = unifrnd(-start_box_length, 0, num_runners, 1);
 
-sd = 0.5
-mu = 5.
+sd = 0.5;
+mu = 5.;
 v_max = sqrt(sd) * randn(size(x)) + mu;
-v_min = 1.
+v_min = 1;
+
+rho_2 = 2.;
+rho_1 = .5;
+%rhs = @(t, x) v_min + v_max .* max((1-density(x)./10.), 0.);
+rhs = @(t, x) min(max(v_max + ((v_min-v_max)/(rho_2-rho_1)) .* (density(x) - rho_1), v_min), v_max)
 
 
-rhs = @(t, x) v_min + v_max .* max((1-density(x)./10.), 0.);
-
-
-[ts, y] = ode45(rhs, [0 100], x);
+[ts, y] = ode45(rhs, [0 30], x);
 toc
 hold on
 for i=1:size(y,2)
