@@ -5,23 +5,19 @@ from datetime import datetime
 import numpy as np
 from visualization import make_runner_video
 
-n = 1000
+n = 2000
 
 t1 = datetime.now()
 constriction_at = 1000
-def width(x):
-    if x<constriction_at-100 or x>constriction_at + 100:
-        return 2.
-    else:
-        return 1.
-res_t, res_x, res_rho = e.solve_particle_model(n, width)
+width = e.Barrier(3000, 100, 200, 7.5, 3.0)
+
+res_t, res_x, res_v, res_rho = e.solve_particle_model(n, width)
 t2 = datetime.now()
 print("Time to solve: ", t2-t1)
-print(len(res_t))
-print(res_t)
 res_x = np.asarray(res_x)
 res_rho = np.asarray(res_rho)
-make_runner_video(res_t, res_x, res_rho, width)
+res_v = np.asarray(res_v)
+make_runner_video(res_t, res_x, res_v, res_rho, width)
 import sys
 sys.exit(1)
 plt.figure()
