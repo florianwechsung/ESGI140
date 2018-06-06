@@ -23,8 +23,6 @@ void sort_indexes(const vector<T> &v, vector<int> &I) {
 class DensitySpeedFunction
 {
     private:
-        double delta_x = 10;
-        double width = 7.5;
         double v_min = 1.0;
         double rho_2 = 2.;
         double rho_1 = .5;
@@ -33,41 +31,44 @@ class DensitySpeedFunction
         vector<double> x_sorted;
         vector<int> x_order;
         vector<double> vmaxs;
+        function<double(double)> width;
     public:
-        DensitySpeedFunction(vector<double>& _vmaxs): rhos(_vmaxs.size(), 0), x_sorted(_vmaxs.size(), 0), x_order(_vmaxs.size(), 0), vmaxs(_vmaxs), rhos_sorted(_vmaxs.size()) {}
+        DensitySpeedFunction(vector<double>& _vmaxs, function<double(double)> _width): rhos(_vmaxs.size(), 0), x_sorted(_vmaxs.size(), 0), x_order(_vmaxs.size(), 0), vmaxs(_vmaxs), rhos_sorted(_vmaxs.size()) , width(_width){}
         void operator() (const vector<double> &xs, vector<double> &dxdt, const double t)
         {
+            double pi = 3.14159265359;
+            double sigma = 3;
+            double delta_x = 3*sigma;
             sort_indexes(xs, x_order);
             for(int i=0; i<xs.size(); i++)
-            {
                 x_sorted[i] = xs[x_order[i]];
-            }
            
             auto it = x_sorted.begin();
             for(int i=0; i<xs.size(); i++)
             {
                 auto up = upper_bound(it, x_sorted.end(), x_sorted[i] + delta_x);
-                //rhos[x_order[i]] = distance(it, up)/(delta_x * width);
-                double act_width = abs(x_sorted[i]-5000) < 10 ? width * 0.1 : width;
-                rhos_sorted[i] = (up-it)/(delta_x * act_width);
+                for(int j=1; j <= up-it; j++)
+                    rhos_sorted[i] += exp(-pow(x_sorted[i]-x_sorted[i+j], 2)/(2.0*sigma*sigma))/sqrt(2*pi*sigma*sigma);
+                rhos_sorted[i] *= 1./width(x_sorted[i]);
+                //auto up = upper_bound(it, x_sorted.end(), x_sorted[i] + delta_x);
+                //rhos_sorted[i] = (up-it)/(delta_x * width(x_sorted[i]));
                 it++;
             }
+
             for(int i=0; i<xs.size(); i++)
-            {
                 rhos[x_order[i]] = rhos_sorted[i];
-            }
+
             for(int i=0; i<xs.size(); i++)
                 dxdt[i] = min(max(vmaxs[i] + ((v_min-vmaxs[i])/(rho_2-rho_1)) * (rhos[i] - rho_1), v_min), vmaxs[i]);
         }
 };
 
-pair<vector<double>, vector<vector<double>>> solve_particle_model(int num_runners)
+pair<vector<double>, vector<vector<double>>> solve_particle_model(int num_runners, function<double(double)> width)
 {
     
     //int num_runners = 10;
-    double w_0 = 7.5; // width of street
     double start_box_density = 4.;
-    double start_box_length = num_runners/(w_0 * start_box_density);
+    double start_box_length = num_runners/(width(0.) * start_box_density);
     auto xs = vector<double>(num_runners);
 
     auto mersenne_engine = mt19937(1);
@@ -80,14 +81,14 @@ pair<vector<double>, vector<vector<double>>> solve_particle_model(int num_runner
     }
 
     double mu = 5.;
-    double sd = 0.5;
+    double sd = 0.1;
 
     auto normal_dist = normal_distribution<double>(mu, sd);
     auto vmaxs = vector<double>(num_runners);
     generate(begin(vmaxs), end(vmaxs), [&mersenne_engine, &normal_dist](){return normal_dist(mersenne_engine);});
 
     auto rho = vector<double>(num_runners);
-    auto rhs_class = DensitySpeedFunction(vmaxs);
+    auto rhs_class = DensitySpeedFunction(vmaxs, width);
 
     //function<void(const vector<double>&, vector<double>&, const double)> rhs = [&](const vector<double> &x, vector<double> &dxdt, const double t)
     //{
