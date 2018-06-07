@@ -113,7 +113,7 @@ tuple<vector<double>, vector<vector<double>>, vector<vector<double>>, vector<vec
     auto xs = vector<double>(num_runners);
 
     for(int i=0; i<xs.size(); i++)
-        xs[i] = (-i)/(start_box_density * width(0.));
+        xs[i] = (-(i+1))/(start_box_density * width(0.));
 
 
 
@@ -128,20 +128,25 @@ tuple<vector<double>, vector<vector<double>>, vector<vector<double>>, vector<vec
     auto res_rho = vector<vector<double>>();
     auto res_vel = vector<vector<double>>();
     auto res_t = vector<double>();
-    function<void(const vector<double>&, double)> observer = [&res_x, &res_t, &res_rho, &rhs_class, &res_vel](const vector<double>& x, double t)
+    double last_printed = -1000;
+    function<void(const vector<double>&, double)> observer = [&res_x, &res_t, &res_rho, &rhs_class, &res_vel, &last_printed](const vector<double>& x, double t)
     {
         res_x.push_back(x);
         res_t.push_back(t);
         res_rho.push_back(*(rhs_class.rho_binned));
         res_vel.push_back(*(rhs_class.velocity));
-        std::cout << "t=" << t << endl;
+        if(t >= last_printed + 60 - 1e-13)
+        {
+           cout << "t=" << t << endl;
+           last_printed = t;
+        }
     };
     //integrate(rhs_class, xs, 0., tmax, 1., observer); 
     //typedef dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<vector<double>>>> stepper_type;
     //integrate_const(stepper_type(), rhs_class, xs, 0.0, tmax, 2.0, observer);
     runge_kutta4< vector<double> > rk4;
 
-    integrate_const(rk4, rhs_class, xs, 0.0, tmax, 2.0, observer);
+    integrate_const(rk4, rhs_class, xs, 0.0, tmax, 1.0, observer);
 
     return make_tuple(res_t, res_x, res_vel, res_rho);
 };

@@ -21,6 +21,7 @@ find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 add_library(${PROJECT_NAME} STATIC
     src/particlemodel.cpp
+    src/measure.cpp
 )
 
 set_target_properties(${PROJECT_NAME}
