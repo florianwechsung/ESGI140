@@ -9,6 +9,7 @@ namespace py = pybind11;
 PYBIND11_MODULE(pyesgi140, m) {
 
     m.def("solve_particle_model", &solve_particle_model);
+    m.def("solve_particle_model_simple", &solve_particle_model);
 
     py::class_<Barrier,
                std::shared_ptr<Barrier>>(

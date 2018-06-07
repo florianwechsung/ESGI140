@@ -44,5 +44,6 @@ class Barrier
      }
 };
 
-std::tuple<std::vector<double>, std::vector<std::vector<double>>, std::vector<std::vector<double>>, std::vector<std::vector<double>>> solve_particle_model(int, Barrier width);
+std::tuple<std::vector<double>, std::vector<std::vector<double>>, std::vector<std::vector<double>>, std::vector<std::vector<double>>> solve_particle_model_simple(int, Barrier width);
+std::tuple<std::vector<double>, std::vector<std::vector<double>>, std::vector<std::vector<double>>, std::vector<std::vector<double>>> solve_particle_model(std::vector<double>&, std::vector<double>&, Barrier width);
 

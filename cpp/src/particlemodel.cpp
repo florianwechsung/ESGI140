@@ -36,15 +36,18 @@ class DensitySpeedFunction
         function<double(double)> width_old;
         shared_ptr<vector<double>> rho_binned;
         shared_ptr<vector<double>> velocity;
+        vector<double> tstart;
         Barrier width;
-        DensitySpeedFunction(vector<double> &_vmaxs, int start_shift, double furthest_distance_possible, Barrier _width)
+        DensitySpeedFunction(vector<double> &_vmaxs, int start_shift, double furthest_distance_possible, Barrier _width, vector<double>& _tstart)
             : rhos(make_shared<vector<double>>(_vmaxs.size(), 0)),
               x_sorted(_vmaxs.size(), 0),
               x_order(_vmaxs.size(), 0),
               vmaxs(_vmaxs),
               rhos_sorted(_vmaxs.size()),
               velocity(make_shared<vector<double>>(_vmaxs.size(), 0)),
-              width(_width)
+              width(_width),
+              tstart(_tstart)
+
         {
 
             rho_binned = make_shared<vector<double>>(start_shift + int(furthest_distance_possible) + 100, 0.);
@@ -79,37 +82,46 @@ class DensitySpeedFunction
 
             for(int i=0; i<xs.size(); i++)
             {
+                if(t < tstart[i])
+                    continue;
                 dxdt[i] = min(max(vmaxs[i] + ((v_min-vmaxs[i])/(rho_2-rho_1)) * ((*rhos)[i] - rho_1), v_min), vmaxs[i]);
                 (*velocity)[i] = dxdt[i];
             }
         }
 };
 
-tuple<vector<double>, vector<vector<double>>, vector<vector<double>>, vector<vector<double>>> solve_particle_model(int num_runners, Barrier width)
+tuple<vector<double>, vector<vector<double>>, vector<vector<double>>, vector<vector<double>>> solve_particle_model_simple(int num_runners, Barrier width)
 {
-    
-    //int num_runners = 10;
-    double start_box_density = 4.;
-    double start_box_length = num_runners/(width(0.) * start_box_density);
-    double tmax = 20*60;
-    auto xs = vector<double>(num_runners);
-
-    auto mersenne_engine = mt19937(1);
-    for(int i=0; i<xs.size(); i++)
-        xs[i] = (i+1-num_runners)/(start_box_density * width(0.));
-
     double mu = 5.;
     double sd = 0.5;
-
+    auto mersenne_engine = mt19937(1);
     auto normal_dist = normal_distribution<double>(mu, sd);
     auto vmaxs = vector<double>(num_runners);
     generate(begin(vmaxs), end(vmaxs), [&mersenne_engine, &normal_dist](){return normal_dist(mersenne_engine);});
+    auto tstarts = vector<double>(num_runners, 0.0);
+    return solve_particle_model(vmaxs, tstarts, width);
+}
+
+tuple<vector<double>, vector<vector<double>>, vector<vector<double>>, vector<vector<double>>> solve_particle_model(vector<double>& vmaxs, vector<double>& tstarts, Barrier width)
+{
+    
+    int num_runners = vmaxs.size();
+    double start_box_density = 4.;
+    double start_box_length = num_runners/(width(0.) * start_box_density);
+    double tmax = 40*60;
+    //double tmax = 60;
+    auto xs = vector<double>(num_runners);
+
+    for(int i=0; i<xs.size(); i++)
+        xs[i] = (-i)/(start_box_density * width(0.));
+
+
 
     double furthest_distance_possible = *max_element(begin(vmaxs), end(vmaxs)) * tmax;
-    int start_shift = -floor(xs[0]);
+    int start_shift = -floor(xs[xs.size()-1]);
 
     auto rho = vector<double>(num_runners);
-    auto rhs_class = DensitySpeedFunction(vmaxs, start_shift, furthest_distance_possible, width);
+    auto rhs_class = DensitySpeedFunction(vmaxs, start_shift, furthest_distance_possible, width, tstarts);
 
 
     auto res_x = vector<vector<double>>();
@@ -122,10 +134,14 @@ tuple<vector<double>, vector<vector<double>>, vector<vector<double>>, vector<vec
         res_t.push_back(t);
         res_rho.push_back(*(rhs_class.rho_binned));
         res_vel.push_back(*(rhs_class.velocity));
+        std::cout << "t=" << t << endl;
     };
     //integrate(rhs_class, xs, 0., tmax, 1., observer); 
-    typedef dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<vector<double>>>> stepper_type;
-    integrate_const(stepper_type(), rhs_class, xs, 0.0, tmax, 0.5, observer);
+    //typedef dense_output_runge_kutta<controlled_runge_kutta<runge_kutta_dopri5<vector<double>>>> stepper_type;
+    //integrate_const(stepper_type(), rhs_class, xs, 0.0, tmax, 2.0, observer);
+    runge_kutta4< vector<double> > rk4;
+
+    integrate_const(rk4, rhs_class, xs, 0.0, tmax, 2.0, observer);
 
     return make_tuple(res_t, res_x, res_vel, res_rho);
 };

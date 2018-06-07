@@ -1,5 +1,5 @@
 #!/bin/bash
-CMAKE_BUILD_TYPE=Release
+CMAKE_BUILD_TYPE=Debug
 CMAKE_C_COMPILER=gcc-8
 #CMAKE_C_COMPILER=gcc
 #CMAKE_C_COMPILER=/opt/intel/compilers_and_libraries/linux/bin/intel64/icc
