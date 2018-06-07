@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import animation
 
-def make_runner_video(res_t, res_x, res_v, res_rho, width, num_frames, xmax=None):
+def make_runner_video(res_t, res_x, res_v, res_rho, width, slope, num_frames, xmax=None):
     fak = len(res_t)//num_frames
     num_frames = len(res_t)//fak
     # First set up the figure, the axis, and the plot element we want to animate
@@ -12,14 +12,18 @@ def make_runner_video(res_t, res_x, res_v, res_rho, width, num_frames, xmax=None
         xmax = np.max(res_x)
     xroad = list(range(int(xmin), int(xmax)))
     w0 = width(0)
-    plt.plot(xroad, [width(xx) + (w0-width(xx))/2 for xx in xroad])
-    plt.plot(xroad, [(w0-width(xx))/2 for xx in xroad])
+    slopes = np.asarray([slope(xx) for xx in xroad])
+    altitude = np.cumsum(slopes)/1000
+    plt.plot(xroad, altitude, label="Altitude")
+    plt.legend()
+    plt.plot(xroad, [width(xx) + (w0-width(xx))/2 for xx in xroad], "b")
+    plt.plot(xroad, [(w0-width(xx))/2 for xx in xroad], "b")
     x = res_x[0, :]
     y = np.zeros(x.shape)
     c = np.asarray([[c, 0, 0] for c in res_v[0, :]])[:,0]
     scat = plt.scatter(x, y, c=np.random.rand(len(x)), s=1)
     plt.xlim((xmin, xmax))
-    plt.ylim((-1, w0+1))
+    plt.ylim((-3, w0+3))
     yref = np.random.rand(res_x.shape[1])
     line, = plt.plot([], [])
 
@@ -57,4 +61,5 @@ def make_runner_video(res_t, res_x, res_v, res_rho, width, num_frames, xmax=None
     # the video can be embedded in html5.  You may need to adjust this for
     # your system: for more information, see
     # http://matplotlib.sourceforge.net/api/animation_api.html
-    anim.save('basic_animation.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
+    plt.xlabel("Distance in m")
+    anim.save('basic_animation.mp4', fps=10, extra_args=['-vcodec', 'libx264'], bitrate=-1)

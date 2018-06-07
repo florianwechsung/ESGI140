@@ -11,36 +11,38 @@ using namespace std;
 
 
 
-class DensitySpeedFunction {
+class DensityTopographySpeedFunction {
    public:
-    int rho_bin_shift;
+    int bin_shift;
     shared_ptr<vector<double>> rhos;
     shared_ptr<vector<double>> rho_binned;
     shared_ptr<vector<double>> velocity;
     vector<double> vmaxs;
     vector<double> width_binned;
+    vector<double> slope_binned;
     vector<double> tstart;
-    function<double(double)> width;
     SpeedSettings settings;
-    DensitySpeedFunction(vector<double> &_vmaxs, vector<double>& xs,
-                         vector<double> &_tstart, function<double(double)> _width, double tmax, SpeedSettings& speedSettings)
+    DensityTopographySpeedFunction(vector<double> &_vmaxs, vector<double>& xs,
+                         vector<double> &_tstart, function<double(double)> width,
+                         function<double(double)> slope, double tmax, SpeedSettings& speedSettings)
         : rhos(make_shared<vector<double>>(_vmaxs.size(), 0)),
           vmaxs(_vmaxs),
           velocity(make_shared<vector<double>>(_vmaxs.size(), 0)),
-          width(_width),
           tstart(_tstart),
           settings(speedSettings)
-
     {
         double furthest_distance_possible =
             *max_element(begin(vmaxs), end(vmaxs)) * tmax;
         int start_shift = -floor(xs[xs.size() - 1]);
         rho_binned = make_shared<vector<double>>(
             start_shift + int(furthest_distance_possible) + 100, 0.);
-        rho_bin_shift = start_shift;
+        bin_shift = start_shift;
         width_binned = vector<double>(rho_binned->size(), 0.);
         for(int i=0; i<rho_binned->size(); i++)
-            width_binned[i] = width(i - rho_bin_shift);
+            width_binned[i] = width(i - bin_shift);
+        slope_binned = vector<double>(rho_binned->size(), 0.);
+        for(int i=0; i<rho_binned->size(); i++)
+            slope_binned[i] = slope(i - bin_shift);
     }
     void operator()(const vector<double> &xs, vector<double> &dxdt,
                     const double t) {
@@ -51,8 +53,8 @@ class DensitySpeedFunction {
         for (int i = 0; i < xs.size(); i++) {
             xx = xs[i];
             xx_floor = (int)(xx);
-            (*rho_binned)[xx_floor + rho_bin_shift] += (xx_floor + 1 - xx);
-            (*rho_binned)[xx_floor + 1 + rho_bin_shift] += (xx - xx_floor);
+            (*rho_binned)[xx_floor + bin_shift] += (xx_floor + 1 - xx);
+            (*rho_binned)[xx_floor + 1 + bin_shift] += (xx - xx_floor);
         }
 
 
@@ -61,7 +63,7 @@ class DensitySpeedFunction {
             (*rhos)[i] = 0;
             int start = int(xs[i] + 1);
             for (int j = start; j < start + foresight; j++) {
-                (*rhos)[i] += (*rho_binned)[j + rho_bin_shift] / width_binned[j + rho_bin_shift];
+                (*rhos)[i] += (*rho_binned)[j + bin_shift] / width_binned[j + bin_shift];
             }
             (*rhos)[i] *= 1. / foresight;
         }
@@ -70,11 +72,21 @@ class DensitySpeedFunction {
         auto v_min = settings.v_min;
         for (int i = 0; i < xs.size(); i++) {
             if (t < tstart[i]) continue;
+
             dxdt[i] =
                 min(max(vmaxs[i] + ((v_min - vmaxs[i]) / (rho_2 - rho_1)) *
                                        ((*rhos)[i] - rho_1),
                         v_min),
                     vmaxs[i]);
+
+            double topo_factor = -0.2 * slope_binned[int(xs[i])+1+bin_shift];
+            // If the density is very high, then the topography won't have any influence.
+            // topo_influence is 0 if the density is high and 1 if the density is low
+            double topo_influence = min(max(1. + (0.-1.)/(rho_2-rho_1) * ((*rhos)[i]-rho_1), 0.), 1.);
+            topo_factor *= topo_influence;
+            //cout << topo_factor << endl;
+            dxdt[i] *= (1.+topo_factor);
+
             (*velocity)[i] = dxdt[i];
         }
     }
@@ -93,13 +105,14 @@ solve_particle_model_simple(int num_runners, function<double(double)> width) {
     });
     auto tstarts = vector<double>(num_runners, 0.0);
     auto settings = SpeedSettings(0.1, 0.5, 2.0);
-    return solve_particle_model(vmaxs, tstarts, width, settings);
+    function<double(double)> slope = [](double x){return 0.0;};
+    return solve_particle_model(vmaxs, tstarts, width, slope, settings);
 }
 
 tuple<vector<double>, vector<vector<double>>, vector<vector<double>>,
       vector<vector<double>>>
 solve_particle_model(vector<double> &vmaxs, vector<double> &tstarts,
-                     function<double(double)>& width, SpeedSettings& speedSettings, double tmax, double dt, double rho_start) {
+                     function<double(double)>& width, function<double(double)>& slope, SpeedSettings& speedSettings, double tmax, double dt, double rho_start) {
     int num_runners = vmaxs.size();
     double start_box_length = num_runners / (width(0.) * rho_start);
     auto xs = vector<double>(num_runners);
@@ -108,8 +121,8 @@ solve_particle_model(vector<double> &vmaxs, vector<double> &tstarts,
         xs[i] = (-(i + 1)) / (rho_start * width(0.));
 
     auto rho = vector<double>(num_runners);
-    auto rhs_class = DensitySpeedFunction(
-        vmaxs, xs, tstarts, width, tmax, speedSettings);
+    auto rhs_class = DensityTopographySpeedFunction(
+        vmaxs, xs, tstarts, width, slope, tmax, speedSettings);
 
     auto res_x = vector<vector<double>>();
     auto res_rho = vector<vector<double>>();

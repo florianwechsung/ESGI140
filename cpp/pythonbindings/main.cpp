@@ -9,7 +9,7 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(pyesgi140, m) {
     m.def("solve_particle_model", &solve_particle_model, py::arg("vmaxs"),
-          py::arg("tstarts"), py::arg("width"), py::arg("speedSettings"), py::arg("tmax") = 3600.,
+          py::arg("tstarts"), py::arg("width"), py::arg("slope"), py::arg("speedSettings"), py::arg("tmax") = 3600.,
           py::arg("dt") = 1.0, py::arg("rho_start") = 4.);
     m.def("solve_particle_model_simple", &solve_particle_model);
     m.def("calculate_total_wasted_time", &calculate_total_wasted_time);
