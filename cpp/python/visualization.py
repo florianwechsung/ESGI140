@@ -2,12 +2,14 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import animation
 
-def make_runner_video(res_t, res_x, res_v, res_rho, width):
-
+def make_runner_video(res_t, res_x, res_v, res_rho, width, num_frames, xmax=None):
+    fak = len(res_t)//num_frames
+    num_frames = len(res_t)//fak
     # First set up the figure, the axis, and the plot element we want to animate
     fig = plt.figure()
     xmin = np.min(res_x)
-    xmax = np.max(res_x)
+    if xmax is None:
+        xmax = np.max(res_x)
     xroad = list(range(int(xmin), int(xmax)))
     w0 = width(0)
     plt.plot(xroad, [width(xx) + (w0-width(xx))/2 for xx in xroad])
@@ -29,7 +31,7 @@ def make_runner_video(res_t, res_x, res_v, res_rho, width):
 
     # animation function.  This is called sequentially
     def animate(i):
-        i = i*3
+        i = i*fak
         print(i)
         x = res_x[i, :]
         y = np.zeros(x.shape)
@@ -48,7 +50,7 @@ def make_runner_video(res_t, res_x, res_v, res_rho, width):
 
     # call the animator.  blit=True means only re-draw the parts that have changed.
     anim = animation.FuncAnimation(fig, animate, init_func=init,
-                                   frames=len(res_t)//3, interval=10, blit=True)
+                                   frames=num_frames, interval=10, blit=True)
 
     # save the animation as an mp4.  This requires ffmpeg or mencoder to be
     # installed.  The extra_args ensure that the x264 codec is used, so that

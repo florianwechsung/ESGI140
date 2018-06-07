@@ -6,10 +6,35 @@ vector<double> calculate_wasted_times(vector<vector<double>>& xs, vector<double>
 {
     auto num_runners = vmaxs.size();
     auto timesteps = xs.size();
+    auto time_taken_from_start_to_finish = get_finish_times(xs, vmaxs, ts, race_distance);
+    auto wasted_times = vector<double>(num_runners, 0.);
+
+    for(int r=0; r<num_runners;r++)
+        wasted_times[r] = time_taken_from_start_to_finish[r] - race_distance/vmaxs[r];
+
+    return wasted_times;
+}
+
+double calculate_total_wasted_time(vector<vector<double>>& xs, vector<double>& vmaxs, vector<double>& ts, double race_distance)
+{
+    auto wasted_times = calculate_wasted_times(xs, vmaxs, ts, race_distance);
+    return accumulate(begin(wasted_times), end(wasted_times), 0.);
+}
+
+double calculate_average_wasted_time(vector<vector<double>>& xs, vector<double>& vmaxs, vector<double>& ts, double race_distance)
+{
+    auto total_wasted_time = calculate_total_wasted_time(xs, vmaxs, ts, race_distance);
+    return total_wasted_time/vmaxs.size();
+}
+
+
+vector<double> get_finish_times(vector<vector<double>>& xs, vector<double>& vmaxs, vector<double>& ts, double race_distance)
+{
+    auto num_runners = vmaxs.size();
+    auto timesteps = xs.size();
     auto time_startline = vector<double>(num_runners, -1);
     auto time_finishline = vector<double>(num_runners, -1);
     auto time_taken_from_start_to_finish = vector<double>(num_runners, 0.);
-    auto wasted_times = vector<double>(num_runners, 0.);
 
     for(int r=0; r<num_runners;r++)
     {
@@ -36,19 +61,6 @@ vector<double> calculate_wasted_times(vector<vector<double>>& xs, vector<double>
         }
         else
             throw logic_error("Unexpected case");
-        wasted_times[r] = time_taken_from_start_to_finish[r] - race_distance/vmaxs[r];
     }
-    return wasted_times;
-}
-
-double calculate_total_wasted_time(vector<vector<double>>& xs, vector<double>& vmaxs, vector<double>& ts, double race_distance)
-{
-    auto wasted_times = calculate_wasted_times(xs, vmaxs, ts, race_distance);
-    return accumulate(begin(wasted_times), end(wasted_times), 0.);
-}
-
-double calculate_average_wasted_time(vector<vector<double>>& xs, vector<double>& vmaxs, vector<double>& ts, double race_distance)
-{
-    auto total_wasted_time = calculate_total_wasted_time(xs, vmaxs, ts, race_distance);
-    return total_wasted_time/vmaxs.size();
+    return time_taken_from_start_to_finish;
 }

@@ -45,6 +45,20 @@ class Barrier
      }
 };
 
-std::tuple<std::vector<double>, std::vector<std::vector<double>>, std::vector<std::vector<double>>, std::vector<std::vector<double>>> solve_particle_model_simple(int, Barrier width);
-std::tuple<std::vector<double>, std::vector<std::vector<double>>, std::vector<std::vector<double>>, std::vector<std::vector<double>>> solve_particle_model(std::vector<double>&, std::vector<double>&, Barrier width);
+class SpeedSettings
+{
+    public:
+        double v_min;
+        double rho_1;
+        double rho_2;
+        SpeedSettings(double _v_min, double _rho_1, double _rho_2) : v_min(_v_min), rho_1(_rho_1), rho_2(_rho_2) {}
+};
 
+std::tuple<std::vector<double>, std::vector<std::vector<double>>,
+           std::vector<std::vector<double>>, std::vector<std::vector<double>>>
+solve_particle_model_simple(int, std::function<double(double)> width);
+
+std::tuple<std::vector<double>, std::vector<std::vector<double>>,
+           std::vector<std::vector<double>>, std::vector<std::vector<double>>>
+solve_particle_model(std::vector<double>&, std::vector<double>&, std::function<double(double)>& width,
+                     SpeedSettings& settings, double tmax = 3600., double dt = 1., double rho_start=4.);
