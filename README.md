@@ -16,6 +16,6 @@ Then run the sample code by doing
     cd ../python/
     python driver.py
 
-This will produce a video looking with the race simulation:
+This will produce a video with the race simulation:
 
 ![Sample Simulation](sample.png)
