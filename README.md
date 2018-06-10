@@ -7,14 +7,14 @@ Installation instructions:
     cd ESGI140
     mkdir build
     cd build
-    cmake ..
+    cmake -DPYBIND11_PYTHON_VERSION=3.5 ..
     make
     export PYTHONPATH=`pwd`:$PYTHONPATH
 
 Then run the sample code by doing
 
     cd ../python/
-    python driver.py
+    python3 driver.py
 
 This will produce a video with the race simulation:
 
