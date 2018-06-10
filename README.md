@@ -5,6 +5,7 @@
 + cmake
 + python3
 + a reasonably up-to-date C++ compiler
++ the boost C++ libraries
 
 ## Installation instructions:
 
