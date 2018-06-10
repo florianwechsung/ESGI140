@@ -32,7 +32,7 @@ class DensityTopographySpeedFunction {
           settings(speedSettings)
     {
         double furthest_distance_possible =
-            *max_element(begin(vmaxs), end(vmaxs)) * tmax;
+            *max_element(begin(vmaxs), end(vmaxs)) * tmax * 1.5; // the factor 1.5 is to account for longer distance due to downhill tracks
         int start_shift = -floor(xs[xs.size() - 1]);
         rho_binned = make_shared<vector<double>>(
             start_shift + int(furthest_distance_possible) + 100, 0.);
