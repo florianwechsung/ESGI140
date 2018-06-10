@@ -76,7 +76,7 @@ def run_simulation(sizes, generate_histogram=False, generate_video=False):
 
 # these were the wave sizes in the actual race
 sizes = [1336, 2976, 1712] 
-run_simulation(sizes, generate_video=False, generate_histogram=True)
+run_simulation(sizes, generate_video=True, generate_histogram=True)
 
 # Comment line below if you want to run the simulation for many wave sizes
 import sys; sys.exit(0)
