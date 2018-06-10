@@ -1,7 +1,12 @@
 # Code for the Lap2Go Project at the ESGI140 in Portugal
 
+## Requirements
 
-Installation instructions:
++ cmake
++ python3
++ a reasonably up-to-date C++ compiler
+
+## Installation instructions:
 
     git clone git@github.com:florianwechsung/ESGI140.git
     cd ESGI140
